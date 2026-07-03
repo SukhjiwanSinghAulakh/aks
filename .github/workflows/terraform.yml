@@ -53,6 +53,11 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
+      - name: Check OIDC Environment
+        run: |
+          echo "ACTIONS_ID_TOKEN_REQUEST_URL=$ACTIONS_ID_TOKEN_REQUEST_URL"
+          echo "ACTIONS_ID_TOKEN_REQUEST_TOKEN=$ACTIONS_ID_TOKEN_REQUEST_TOKEN"
+          
       - name: Azure login
         uses: azure/login@v3
         with:
