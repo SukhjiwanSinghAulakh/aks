@@ -1,0 +1,75 @@
+name: Terraform Deployment
+
+on:
+  workflow_dispatch:
+
+env:
+  INFRA_CONFIG: |
+    {
+      "resource_groups": {
+        "rg-dev": {
+          "location": "Central India",
+          "tags": {
+            "Environment": "Dev",
+            "Owner": "DevOps"
+          }
+        }
+      },
+      "container_registries": {
+        "acr-dev": {
+          "rg_key": "rg-dev",
+          "sku": "Standard",
+          "admin_enabled": false,
+          "tags": {
+            "Environment": "Dev"
+          }
+        }
+      },
+      "kubernetes_clusters": {
+        "aks-dev": {
+          "rg_key": "rg-dev",
+          "dns_prefix": "aksdev",
+          "default_node_pool": {
+            "name": "system",
+            "node_count": 1,
+            "vm_size": "Standard_DS2_v2"
+          },
+          "tags": {
+            "Environment": "Dev"
+          }
+        }
+      }
+    }
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Azure login
+        uses: azure/login@v3
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+        
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Plan
+        env:
+          TF_VAR_infra_config: ${{ env.INFRA_CONFIG }}
+        run: terraform plan
+
+      - name: Terraform Apply
+        if: github.ref == 'refs/heads/main'
+        env:
+          TF_VAR_infra_config: ${{ env.INFRA_CONFIG }}
+        run: terraform apply -auto-approve
